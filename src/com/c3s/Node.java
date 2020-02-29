@@ -6,29 +6,28 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 
-public class Process {
+public class Node {
     private int pid;
     private boolean leader, failed;
     private ServerSocket serverSocket;
-    public Process(int pid) throws IOException {
+    ProcessBuilder processBuilder ;
+
+    public Node(int pid) throws IOException {
         this.pid = pid;
         this.leader = false;
         this.failed = false;
         this.serverSocket = new ServerSocket(Config.MainPort + pid);
-
+        this.processBuilder =  new ProcessBuilder( );
     }
-
-
-
 
 
     public void elect() throws InterruptedException {
         boolean response = false;
         if (failed) return;
         for (int i = this.pid + 1; i <= 5; i++) {
-            TimeOut.getInstance().Wait();
+                TimeOut.getInstance().Wait();
             try {
-        if (Leader.currentLeader != null) return;
+                if (Leader.currentLeader != null) return;
                 Socket socket = new Socket(InetAddress.getLocalHost(), Config.MainPort + i);
                 DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
                 System.out.println("p(" + pid + "): Are you there Candidate p(" + i + ")");
@@ -50,7 +49,7 @@ public class Process {
     }
 
 
-    public void serve() {
+    public void coordinate() {
         try {
             for (int i = 0; i < 5; i++) {
                 TimeOut.getInstance().Wait();
@@ -87,7 +86,7 @@ public class Process {
                 System.out.println("p(" + pid + ") cant respond its disconnected");
                 socket.close();
                 serverSocket.close();
-                throw new Exception("P: " + pid + " disconnected " );
+                throw new Exception("P: " + pid + " disconnected ");
             }
             if (temp.contains("Elect")) {
                 System.out.println("YES: P:" + pid);
@@ -104,11 +103,12 @@ public class Process {
 
     public void startProcess() throws IOException {
 
+        // act as a client who send data to server
         (new Thread(new Runnable() {
             public void run() {
                 while (true) {
                     if (Leader.currentLeader != null && leader) {
-                        serve();
+                        coordinate();
                     } else {
                         try {
                             elect();
@@ -137,6 +137,7 @@ public class Process {
 
 
     }
+
 
 
 }

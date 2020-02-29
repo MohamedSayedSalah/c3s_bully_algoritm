@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="BullyAlgoritm:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/BullyAlgoritm_jar</output-path>
+    <root id="archive" name="BullyAlgoritm.jar">
+      <element id="module-output" name="BullyAlgoritm" />
+    </root>
+  </artifact>
+</component>
