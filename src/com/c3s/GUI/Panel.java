@@ -40,8 +40,11 @@ public class Panel extends JFrame {
 
 
         input.setSize(new Dimension(100,100));
+
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent we) {
+                System.out.println("Exit");
+                Main.kill_all();
                 System.exit(0);
             }
         });

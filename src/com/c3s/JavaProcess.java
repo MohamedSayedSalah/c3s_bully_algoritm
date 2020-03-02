@@ -9,7 +9,7 @@ public final class JavaProcess {
 
     private JavaProcess() {}
 
-    public static int exec(Class klass, List<String> args , int process_id , int n_process) throws IOException,
+    public static Process exec(Class klass, List<String> args , int process_id , int n_process) throws IOException,
             InterruptedException {
         String javaHome = System.getProperty("java.home");
         String javaBin = javaHome +
@@ -30,10 +30,10 @@ public final class JavaProcess {
         }
 
         ProcessBuilder builder = new ProcessBuilder(command);
-
         Process process = builder.inheritIO().start();
+        Main.processes.add(process);
         process.waitFor();
-        return process.exitValue();
+        return process;
     }
 
 }
