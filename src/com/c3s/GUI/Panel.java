@@ -20,7 +20,7 @@ public class Panel extends JFrame {
         getContentPane().setLayout(new BorderLayout());
 
 
-        logsPanel.setLayout(new GridLayout(100, 1, 1, 1));
+        logsPanel.setLayout(new GridLayout(500, 1, 1, 1));
 
 //        contentPanel.add( new JScrollPane(logsPanel));
         setSize(Config.width, Config.height);

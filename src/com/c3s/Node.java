@@ -15,6 +15,7 @@ public class Node {
     private boolean leader, failed, eligibleForElection;
     private ServerSocket serverSocket;
     private int n_process;
+    private Date lastCoordinatorMessage ;
     DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
     public Node(int pid, int n_process) throws IOException {
@@ -24,10 +25,20 @@ public class Node {
         this.serverSocket = new ServerSocket(Config.MainPort + pid);
         this.n_process = n_process;
         this.eligibleForElection = true;
+        lastCoordinatorMessage = new Date() ;
     }
 
     public int getPid() {
         return this.pid;
+    }
+
+    public Date getLastCoordinatorMessage(){
+        return lastCoordinatorMessage ;
+    }
+
+
+    public void setLastCoordinatorMessage(Date lastDate){
+        this.lastCoordinatorMessage = lastDate ;
     }
 
     public void setEligibleForElection(boolean eligibleForElection) {
@@ -38,14 +49,13 @@ public class Node {
     public void elect() throws InterruptedException, IOException {
         if (failed) return;
         for (int i = this.pid + 1; i <= n_process; i++) {
-//            TimeOut.getInstance().Wait();
             try {
                 if (!eligibleForElection) return;
                 Socket socket = new Socket(InetAddress.getLocalHost(), Config.MainPort + i);
                 DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
                 Helper.messageToMainServer("p(" + pid + ") -> p(" + i + ") : Election Message " + String.valueOf(dateFormat.format(new Date().getTime())));
                 System.out.println("p(" + pid + ") -> p(" + i + ") : Election Message " + String.valueOf(dateFormat.format(new Date().getTime())));
-                dos.writeUTF("Elect");
+                dos.writeUTF(String.valueOf(dateFormat.format(new Date().getTime())));
                 socket.close();
                 eligibleForElection = false;
             } catch (IOException ex) {
@@ -61,14 +71,13 @@ public class Node {
     public void coordinate() throws IOException {
         try {
             for (int i = 0; i < n_process; i++) {
-//                TimeOut.getInstance().Wait();
                 if (i == pid) continue;
                 try {
                     Socket socket = new Socket(InetAddress.getLocalHost(), Config.MainPort + i);
                     DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
                     Helper.messageToMainServer("P(" + pid + ") ->  P:(" + i + ") : Coordinator Message " + String.valueOf(dateFormat.format(new Date().getTime())));
                     System.out.println("P(" + pid + ") ->  P:(" + i + ") : Coordinator Message " + String.valueOf(dateFormat.format(new Date().getTime())));
-                    dos.writeUTF("Slave");
+                    dos.writeUTF("*"+String.valueOf(dateFormat.format(new Date().getTime())) );
                     socket.close();
                 } catch (IOException ex) {
                     Helper.messageToMainServer("p(" + pid + ") -> p(" + i + ") : No Response " + String.valueOf(dateFormat.format(new Date().getTime())));
@@ -86,20 +95,22 @@ public class Node {
     }
 
     public void listen() throws Exception {
+        if(failed) return ;
+
         try {
+            System.out.println( pid  + " " + lastCoordinatorMessage);
             Socket socket = serverSocket.accept();
             if (failed) {
                 Helper.messageToMainServer("P(" + pid + ") cant respond its disconnected " + String.valueOf(dateFormat.format(new Date().getTime())));
                 System.out.println("P(" + pid + ") cant respond its disconnected" + String.valueOf(dateFormat.format(new Date().getTime())));
                 socket.close();
                 serverSocket.close();
-                throw new Exception("P: " + pid + " disconnected " + String.valueOf(dateFormat.format(new Date().getTime())));
+
             }
             new ProcessRequestHandler(socket, this).start();
-            serverSocket.setSoTimeout(5000);
 
         } catch (SocketTimeoutException ignored) {
-            eligibleForElection = true;
+            System.out.println(pid + " Eligable for Election");
         }
 
     }
@@ -122,6 +133,9 @@ public class Node {
                     } else {
                         try {
                             TimeOut.getInstance().Wait();
+                            if (Math.abs( new Date().getTime() - lastCoordinatorMessage.getTime()) > Config.THRESHOLD && (!failed || leader)){
+                                eligibleForElection = true;
+                            }
                             elect();
                         } catch (Exception e) {
                         }
@@ -137,8 +151,8 @@ public class Node {
                 while (true) {
                     try {
                         listen();
-                    } catch (Exception ignored) {
-
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
             }

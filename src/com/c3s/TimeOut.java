@@ -16,7 +16,7 @@ public class TimeOut {
     }
 
     public void Wait () throws InterruptedException {
-        Thread.sleep(2000);
+        Thread.sleep(1000);
     }
 
 
