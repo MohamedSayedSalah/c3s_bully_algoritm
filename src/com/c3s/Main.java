@@ -16,30 +16,31 @@ public class Main {
 
     private static Panel panel;
     private static ServerSocket serverSocket;
-
     public static void main(String[] args) throws IOException {
+        panel = new Panel();
+    }
 
-        Scanner in = new Scanner(System.in);
-        System.out.println("Hey, please enter the amount of processes to start:");
-        int processes = in.nextInt();
-        for (int i = 0; i < processes; i++) {
-            start(args, i, processes);
-        }
-        serverSocket = new ServerSocket(12345);
-        panel = new Panel(processes);
-        (new Thread(new Runnable() {
-            public void run() {
-                while (true) {
-                    try {
-                        mainServer();
-                    } catch (Exception ignored) {
 
+
+    public static  void init(int processes) throws IOException {
+            for (int i = 0; i < processes; i++) {
+                start( i, processes);
+            }
+            serverSocket = new ServerSocket(12345);
+
+            (new Thread(new Runnable() {
+                public void run() {
+                    while (true) {
+                        try {
+                            mainServer();
+                        } catch (Exception ignored) {
+
+                        }
                     }
                 }
-            }
-        })).start();
+            })).start();
 
-    }
+        }
 
 
     public static void mainServer() throws IOException {
@@ -53,11 +54,11 @@ public class Main {
     }
 
 
-    public static void start(String[] args, int id, int n_process) {
+    public static void start( int id, int n_process) {
         (new Thread(new Runnable() {
             public void run() {
                 try {
-                    JavaProcess.exec(Runner.class, Arrays.asList(args), id, n_process);
+                    JavaProcess.exec(Runner.class, Arrays.asList(new String []{}), id, n_process);
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
                 }
