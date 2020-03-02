@@ -9,8 +9,8 @@ So there are two ways for doing this
 - create  a central queue for all the processes and  every process consume the message from the central queue accordingly 
 - processes communicate with each other directly 
 
-
 -in order for each process to communicate directly it must act as a client and server at the same times 
+
 -so every created process has 2 threads for listening for incoming requests and pushing message to other process 
 
 
