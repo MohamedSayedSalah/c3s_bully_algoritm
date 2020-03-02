@@ -5,8 +5,6 @@ import com.c3s.Utils.Helper;
 
 import java.io.*;
 import java.net.*;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 
@@ -16,7 +14,7 @@ public class Node {
     private ServerSocket serverSocket;
     private int n_process;
     private Date lastCoordinatorMessage ;
-    DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
 
     public Node(int pid, int n_process) throws IOException {
         this.pid = pid;
@@ -37,6 +35,20 @@ public class Node {
     }
 
 
+    public boolean isLeader (){
+        return this.leader ;
+    }
+
+    public void setLeaderState(boolean leader){
+        this.leader = leader ;
+    }
+
+    public void setState (boolean state){
+        this.failed = state ;
+    }
+
+
+
     public void setLastCoordinatorMessage(Date lastDate){
         this.lastCoordinatorMessage = lastDate ;
     }
@@ -53,14 +65,14 @@ public class Node {
                 if (!eligibleForElection) return;
                 Socket socket = new Socket(InetAddress.getLocalHost(), Config.MainPort + i);
                 DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-                Helper.messageToMainServer("p(" + pid + ") -> p(" + i + ") : Election Message " + String.valueOf(dateFormat.format(new Date().getTime())));
-                System.out.println("p(" + pid + ") -> p(" + i + ") : Election Message " + String.valueOf(dateFormat.format(new Date().getTime())));
-                dos.writeUTF(String.valueOf(dateFormat.format(new Date().getTime())));
+                Helper.messageToMainServer("p(" + pid + ") -> p(" + i + ") : Election Message " + String.valueOf(Config.dateFormat.format(new Date().getTime())));
+                System.out.println("p(" + pid + ") -> p(" + i + ") : Election Message " + String.valueOf(Config.dateFormat.format(new Date().getTime())));
+                dos.writeUTF(String.valueOf(Config.dateFormat.format(new Date().getTime())));
                 socket.close();
                 eligibleForElection = false;
             } catch (IOException ex) {
-                Helper.messageToMainServer("p(" + pid + ") -> p(" + i + ") : No Response P(" + pid + ") I will be The new Leader " + String.valueOf(dateFormat.format(new Date().getTime())));
-                System.out.println("p(" + pid + ") -> p(" + i + ") : No Response P(" + pid + ") I will be The new Leader " + String.valueOf(dateFormat.format(new Date().getTime())));
+                Helper.messageToMainServer("p(" + pid + ") -> p(" + i + ") : No Response P(" + pid + ") new Leader p("+pid+")" + String.valueOf(Config.dateFormat.format(new Date().getTime())));
+                System.out.println("p(" + pid + ") -> p(" + i + ") : No Response P(" + pid + ") new Leader p("+pid+")" + String.valueOf(Config.dateFormat.format(new Date().getTime())));
                 this.leader = true;
             }
         }
@@ -75,42 +87,40 @@ public class Node {
                 try {
                     Socket socket = new Socket(InetAddress.getLocalHost(), Config.MainPort + i);
                     DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-                    Helper.messageToMainServer("P(" + pid + ") ->  P:(" + i + ") : Coordinator Message " + String.valueOf(dateFormat.format(new Date().getTime())));
-                    System.out.println("P(" + pid + ") ->  P:(" + i + ") : Coordinator Message " + String.valueOf(dateFormat.format(new Date().getTime())));
-                    dos.writeUTF("*"+String.valueOf(dateFormat.format(new Date().getTime())) );
+                    Helper.messageToMainServer("P(" + pid + ") ->  P:(" + i + ") : Coordinator Message " + String.valueOf(Config.dateFormat.format(new Date().getTime())));
+                    System.out.println("P(" + pid + ") ->  P:(" + i + ") : Coordinator Message " + String.valueOf(Config.dateFormat.format(new Date().getTime())));
+                    dos.writeUTF("*"+String.valueOf(Config.dateFormat.format(new Date().getTime())) );
                     socket.close();
                 } catch (IOException ex) {
-                    Helper.messageToMainServer("p(" + pid + ") -> p(" + i + ") : No Response " + String.valueOf(dateFormat.format(new Date().getTime())));
-                    System.out.println("p(" + pid + ") -> p(" + i + ") : No Response" + String.valueOf(dateFormat.format(new Date().getTime())));
+                    Helper.messageToMainServer("p(" + pid + ") -> p(" + i + ") : No Response " + String.valueOf(Config.dateFormat.format(new Date().getTime())));
+                    System.out.println("p(" + pid + ") -> p(" + i + ") : No Response" + String.valueOf(Config.dateFormat.format(new Date().getTime())));
                 }
             }
         } catch (Exception ex1) {
 
-        } finally {
-            Helper.messageToMainServer("Leader P(" + pid + ") is down " + String.valueOf(dateFormat.format(new Date().getTime()) ));
-            System.out.println("Leader P(" + pid + ") is down " + String.valueOf(dateFormat.format(new Date().getTime()) ));
-            this.failed = true;
-            this.leader = false;
         }
+//        finally {
+//            Helper.messageToMainServer("Leader P(" + pid + ") is down " + String.valueOf(Config.dateFormat.format(new Date().getTime()) ));
+//            System.out.println("Leader P(" + pid + ") is down " + String.valueOf(Config.dateFormat.format(new Date().getTime()) ));
+//            this.failed = true;
+//            this.leader = false;
+//        }
     }
 
     public void listen() throws Exception {
         if(failed) return ;
 
         try {
-            System.out.println( pid  + " " + lastCoordinatorMessage);
             Socket socket = serverSocket.accept();
             if (failed) {
-                Helper.messageToMainServer("P(" + pid + ") cant respond its disconnected " + String.valueOf(dateFormat.format(new Date().getTime())));
-                System.out.println("P(" + pid + ") cant respond its disconnected" + String.valueOf(dateFormat.format(new Date().getTime())));
+                Helper.messageToMainServer("P(" + pid + ") cant respond its disconnected " + String.valueOf(Config.dateFormat.format(new Date().getTime())));
+                System.out.println("P(" + pid + ") cant respond its disconnected" + String.valueOf(Config.dateFormat.format(new Date().getTime())));
                 socket.close();
                 serverSocket.close();
-
             }
             new ProcessRequestHandler(socket, this).start();
 
         } catch (SocketTimeoutException ignored) {
-            System.out.println(pid + " Eligable for Election");
         }
 
     }

@@ -22,12 +22,20 @@ public class ProcessRequestHandler extends Thread {
         try {
             DataInputStream dos = new DataInputStream(socket.getInputStream());
             String strDate = dos.readUTF();
-            if (strDate.charAt(0) == '*'){
-            strDate  =  strDate.substring(1);
-            node.setEligibleForElection(false);
-            Date date   = node.dateFormat.parse(strDate) ;
-            node.setLastCoordinatorMessage(date);
+
+            System.out.println(strDate.contains("Kill") +" "+ node.isLeader() + node.getPid());
+            if (strDate.charAt(0) == '*') {
+                strDate = strDate.substring(1);
+                node.setEligibleForElection(false);
+                Date date = Config.dateFormat.parse(strDate);
+                node.setLastCoordinatorMessage(date);
+            }else if (strDate.contains("Kill") && node.isLeader()){
+                node.setState(true);
+                node.setLeaderState(false);
+                Helper.messageToMainServer("Leader P(" + node.getPid() + ") is down " + String.valueOf(Config.dateFormat.format(new Date().getTime()) ));
+                System.out.println("Leader P(" + node.getPid() + ") is down " + String.valueOf(Config.dateFormat.format(new Date().getTime()) ));
             }
+
         } catch (IOException | ParseException e) {
            return ;
         }

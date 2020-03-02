@@ -22,6 +22,9 @@ public class Panel extends JFrame {
     JLabel processesCount = new JLabel() ;
     JPanel input = new JPanel() ;
 
+
+    JButton coordinator = new JButton("Kill Coordinator") ;
+
     public  Panel()
     {
         setTitle("Bully");
@@ -50,12 +53,19 @@ public class Panel extends JFrame {
         });
 
 
+        coordinator.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                Main.broadcast();
+            }
+        } );
+
+
         submit.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                System.out.println(pCount.getText());
-
+                 submit.setEnabled(false);
                 try {
                     Main.init(Integer.parseInt(pCount.getText()));
+
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
@@ -65,20 +75,28 @@ public class Panel extends JFrame {
         input.add(processesCount);
         input.add(pCount) ;
         input.add(submit) ;
+        input.add(coordinator);
+        input.add(helpMessages("new Leader message will be in blue")) ;
+        input.add(helpMessages("any message from Coordinator (leader) will be in green")) ;
+        input.add(helpMessages("process which try to elect its message will be in black")) ;
+        input.add(helpMessages("any message to Killed or disconnected process will be in Red")) ;
+
 
         add(input) ;
         contentPanel.add(logsPanel,BorderLayout.EAST);
         getContentPane().add(new JScrollPane(contentPanel),BorderLayout.EAST);
         setVisible(true);
-        addLogsOutput("Waiting For logs Messages it takes around 10 seconds to start all the processes.....................");
+        addLogsOutput("Waiting For logs Messages .....");
     }
 
     public void addLogsOutput (String  log){
         JLabel label = new JLabel(log);
-        if (log.contains("down")){
+        if (log.contains("down") || log.contains("Kill") || log.contains("disconnected")){
             label.setForeground(Color.RED);
         }else if (log.contains("Coordinator")){
             label.setForeground(new Color(0,100,0));
+        }else if (log.contains("Leader")){
+            label.setForeground(Color.blue);
         }
         label.setFont(new Font("Helvetica", Font.PLAIN, 15 ));
         logsPanel.add(label);
@@ -88,5 +106,18 @@ public class Panel extends JFrame {
 
 
 
+    public JLabel helpMessages (String message ){
+        JLabel label = new JLabel(message,SwingConstants.CENTER);
+        if (message.contains("down") || message.contains("Kill") || message.contains("disconnected")){
+            label.setForeground(Color.RED);
+        }else if (message.contains("Coordinator")){
+            label.setForeground(new Color(0,100,0));
+        }else if (message.contains("Leader")){
+            label.setForeground(Color.blue);
+        }
+        label.setFont(new Font("Helvetica", Font.PLAIN, 15 ));
+        return label;
+
+    }
 
 }
