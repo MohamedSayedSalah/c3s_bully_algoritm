@@ -9,7 +9,7 @@ public final class JavaProcess {
 
     private JavaProcess() {}
 
-    public static int exec(Class klass, List<String> args) throws IOException,
+    public static int exec(Class klass, List<String> args , int process_id , int n_process) throws IOException,
             InterruptedException {
         String javaHome = System.getProperty("java.home");
         String javaBin = javaHome +
@@ -23,6 +23,8 @@ public final class JavaProcess {
         command.add("-cp");
         command.add(classpath);
         command.add(className);
+        command.add(Integer.toString(process_id)) ;
+        command.add(Integer.toString(n_process)) ;
         if (args != null) {
             command.addAll(args);
         }

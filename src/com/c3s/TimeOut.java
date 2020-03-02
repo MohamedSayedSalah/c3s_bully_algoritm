@@ -1,9 +1,10 @@
 package com.c3s;
 
 import java.sql.Time;
+import java.time.Duration;
 import java.util.concurrent.*;
 
-public class TimeOut  {
+public class TimeOut {
     private static TimeOut timeOut  ;
     private TimeOut(){} ;
 
@@ -15,6 +16,8 @@ public class TimeOut  {
     }
 
     public void Wait () throws InterruptedException {
-        Thread.sleep(1000);
+        Thread.sleep(2000);
     }
+
+
 }

@@ -4,19 +4,15 @@ import java.io.IOException;
 import java.util.Arrays;
 
 public class Runner {
+    public static void main(String[] args) throws IOException {
 
-
-    public static void main (String [] args) throws IOException {
-        Node[] nodes = new Node[5];
-
-        for (int i = 0; i < 5; i++)
-            nodes[i] = new Node(i);
-
-        for (int i = 0; i < 5; i++) {
-            nodes[i].startProcess();
-        }
-
+        StartSeparateProcess(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
     }
+
+    public static void StartSeparateProcess(int processId, int n_process) throws IOException {
+        new Node(processId, n_process).startProcess();
+    }
+
 
 }
 

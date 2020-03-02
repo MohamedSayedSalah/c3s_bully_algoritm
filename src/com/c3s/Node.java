@@ -1,101 +1,105 @@
 package com.c3s;
 
+import com.c3s.GUI.Panel;
+import com.c3s.Utils.Helper;
+
 import java.io.*;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 
 public class Node {
     private int pid;
-    private boolean leader, failed;
+    private boolean leader, failed, eligibleForElection;
     private ServerSocket serverSocket;
-    ProcessBuilder processBuilder ;
+    private int n_process;
+    DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
-    public Node(int pid) throws IOException {
+    public Node(int pid, int n_process) throws IOException {
         this.pid = pid;
         this.leader = false;
         this.failed = false;
         this.serverSocket = new ServerSocket(Config.MainPort + pid);
-        this.processBuilder =  new ProcessBuilder( );
+        this.n_process = n_process;
+        this.eligibleForElection = true;
+    }
+
+    public int getPid() {
+        return this.pid;
+    }
+
+    public void setEligibleForElection(boolean eligibleForElection) {
+        this.eligibleForElection = eligibleForElection;
     }
 
 
-    public void elect() throws InterruptedException {
-        boolean response = false;
+    public void elect() throws InterruptedException, IOException {
         if (failed) return;
-        for (int i = this.pid + 1; i <= 5; i++) {
-                TimeOut.getInstance().Wait();
+        for (int i = this.pid + 1; i <= n_process; i++) {
+//            TimeOut.getInstance().Wait();
             try {
-                if (Leader.currentLeader != null) return;
+                if (!eligibleForElection) return;
                 Socket socket = new Socket(InetAddress.getLocalHost(), Config.MainPort + i);
                 DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-                System.out.println("p(" + pid + "): Are you there Candidate p(" + i + ")");
+                Helper.messageToMainServer("p(" + pid + ") -> p(" + i + ") : Election Message " + String.valueOf(dateFormat.format(new Date().getTime())));
+                System.out.println("p(" + pid + ") -> p(" + i + ") : Election Message " + String.valueOf(dateFormat.format(new Date().getTime())));
                 dos.writeUTF("Elect");
                 socket.close();
-                response = true;
+                eligibleForElection = false;
             } catch (IOException ex) {
-                System.out.println("P(" + this.pid + ") Candidate (P" + i
-                        + ") didn't respond");
-            } finally {
-                if (!response && Leader.currentLeader == null) {
-                    System.out.println("New Leader is P: " + pid);
-                    Leader.currentLeader = this;
-                    this.leader = true;
-                }
+                Helper.messageToMainServer("p(" + pid + ") -> p(" + i + ") : No Response P(" + pid + ") I will be The new Leader " + String.valueOf(dateFormat.format(new Date().getTime())));
+                System.out.println("p(" + pid + ") -> p(" + i + ") : No Response P(" + pid + ") I will be The new Leader " + String.valueOf(dateFormat.format(new Date().getTime())));
+                this.leader = true;
             }
         }
 
     }
 
 
-    public void coordinate() {
+    public void coordinate() throws IOException {
         try {
-            for (int i = 0; i < 5; i++) {
-                TimeOut.getInstance().Wait();
+            for (int i = 0; i < n_process; i++) {
+//                TimeOut.getInstance().Wait();
                 if (i == pid) continue;
                 try {
                     Socket socket = new Socket(InetAddress.getLocalHost(), Config.MainPort + i);
                     DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-                    System.out.println("P(" + pid + "): Are You There Slave P:(" + i + ")");
+                    Helper.messageToMainServer("P(" + pid + ") ->  P:(" + i + ") : Coordinator Message " + String.valueOf(dateFormat.format(new Date().getTime())));
+                    System.out.println("P(" + pid + ") ->  P:(" + i + ") : Coordinator Message " + String.valueOf(dateFormat.format(new Date().getTime())));
                     dos.writeUTF("Slave");
                     socket.close();
                 } catch (IOException ex) {
-                    System.out.println("P" + this.pid + ": Slave P" + i
-                            + " didn't respond");
+                    Helper.messageToMainServer("p(" + pid + ") -> p(" + i + ") : No Response " + String.valueOf(dateFormat.format(new Date().getTime())));
+                    System.out.println("p(" + pid + ") -> p(" + i + ") : No Response" + String.valueOf(dateFormat.format(new Date().getTime())));
                 }
             }
         } catch (Exception ex1) {
 
         } finally {
-            System.out.println("leader p(" + pid + ") is down");
-            Leader.currentLeader = null;
+            Helper.messageToMainServer("Leader P(" + pid + ") is down " + String.valueOf(dateFormat.format(new Date().getTime()) ));
+            System.out.println("Leader P(" + pid + ") is down " + String.valueOf(dateFormat.format(new Date().getTime()) ));
             this.failed = true;
             this.leader = false;
-
         }
     }
 
-    public void listen() throws IOException {
+    public void listen() throws Exception {
         try {
-            TimeOut.getInstance().Wait();
             Socket socket = serverSocket.accept();
-            DataInputStream dos = new DataInputStream(socket.getInputStream());
-            String temp = dos.readUTF();
             if (failed) {
-                System.out.println("p(" + pid + ") cant respond its disconnected");
+                Helper.messageToMainServer("P(" + pid + ") cant respond its disconnected " + String.valueOf(dateFormat.format(new Date().getTime())));
+                System.out.println("P(" + pid + ") cant respond its disconnected" + String.valueOf(dateFormat.format(new Date().getTime())));
                 socket.close();
                 serverSocket.close();
-                throw new Exception("P: " + pid + " disconnected ");
+                throw new Exception("P: " + pid + " disconnected " + String.valueOf(dateFormat.format(new Date().getTime())));
             }
-            if (temp.contains("Elect")) {
-                System.out.println("YES: P:" + pid);
-            } else if (temp.contains("Slave")) {
-                System.out.println("P: " + pid + " Yes , Leader");
-            }
+            new ProcessRequestHandler(socket, this).start();
+            serverSocket.setSoTimeout(5000);
 
-        } catch (Exception ignored) {
-
+        } catch (SocketTimeoutException ignored) {
+            eligibleForElection = true;
         }
 
     }
@@ -103,21 +107,26 @@ public class Node {
 
     public void startProcess() throws IOException {
 
+
         // act as a client who send data to server
         (new Thread(new Runnable() {
             public void run() {
                 while (true) {
-                    if (Leader.currentLeader != null && leader) {
-                        coordinate();
+                    if (leader) {
+                        try {
+                            TimeOut.getInstance().Wait();
+                            coordinate();
+                        } catch (IOException | InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     } else {
                         try {
+                            TimeOut.getInstance().Wait();
                             elect();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                        } catch (Exception e) {
                         }
                     }
                 }
-
             }
         })).start();
 
@@ -137,7 +146,6 @@ public class Node {
 
 
     }
-
 
 
 }
